@@ -1,0 +1,14 @@
+STRPGMEXP  PGMLVL(*CURRENT) SIGNATURE('AUTLSRV V1.0')
+   EXPORT     SYMBOL("AuthListExists")
+   EXPORT     SYMBOL("LibraryExists")
+   EXPORT     SYMBOL("TableExists")
+   EXPORT     SYMBOL("AddAuthListToFile")
+   EXPORT     SYMBOL("RemoveAuthListFromFile")
+   EXPORT     SYMBOL("GetFileAuthList")
+   EXPORT     SYMBOL("GetFilePublicAuth")
+   EXPORT     SYMBOL("GetAutlPublicAuth")
+   EXPORT     SYMBOL("CheckObject")
+   EXPORT     SYMBOL("LogMessage")
+ENDPGMEXP
+
+

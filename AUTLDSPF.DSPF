@@ -1,0 +1,127 @@
+     A*----------------------------------------------------------------
+     A* Authorization List Helper Program
+     A*----------------------------------------------------------------
+     A                                      DSPSIZ(24 80 *DS3                  -
+     A                                             27 132 *DS4)
+     A                                      CA03
+     A                                      PRINT
+     A                                      INDARA
+     A*===============================================================
+     A* INITIAL SUBFILE LISTING
+     A*===============================================================
+     A          R SFL1                      SFL
+     A  03                                  SFLNXTCHG
+     A            USERINPUT      1A  B  5  5
+     A            TABLIB        10A  O  5 10
+     A            TABNAM        10A  O  5 21
+     A            TABAUTL       10A  O  5 34
+     A  10                                  COLOR(RED)
+     A            PUBAUT        10A  O  5 47
+     A  11                                  COLOR(RED)
+     A            PUBSRC        10A  O  5 58
+     A  12                                  COLOR(RED)
+     A            STATUS        10A  O  5 71
+     A                                  6 16'Actual Authority:'
+     A                                      COLOR(WHT)
+     A            ACTAUTL       10A  O  6 34
+     A            ACTPUB        10A  O  6 47
+     A            ACTSRC        10A  O  6 58
+     A                                  7 10'__________________________________-
+     A                                      ___________________________________-
+     A                                      _'
+     A*----------------------------------------------------------------
+     A          R CTL1                      SFLCTL(SFL1)
+     A                                      SFLSIZ(0006)
+     A                                      SFLPAG(0005)
+     A                                      CA05
+     A                                      CA06
+     A                                      OVERLAY
+     A                                      SFLMODE(&S1MODE)
+     A  01                                  SFLDSP
+     A  02                                  SFLDSPCTL
+     A N02                                  SFLCLR
+     A N03                                  SFLEND(*MORE)
+     A  04                                  SFLDROP(CA11)
+     A N04                                  SFLFOLD(CA11)
+     A                                      CHANGE(05)
+     A            S1MODE         1A  H
+     A            S1RCDNBR       4S 0H      SFLRCDNBR
+     A                                  1  3'2=Edit, 4=Delete, 5=View'
+     A                                      COLOR(BLU)
+     A                                  3  2'Filter:'
+     A            C1LIB         10A  B  3 10
+     A            C1FILE        10A  B  3 21
+     A            C1AUTL        10A  B  3 34
+     A            C1STATUS      10A  B  3 71CHECK(LC)
+     A                                  4 10'Library   '
+     A                                      COLOR(WHT)
+     A                                      DSPATR(UL)
+     A                                  4 21'Table     '
+     A                                      COLOR(WHT)
+     A                                      DSPATR(UL)
+     A                                  4 34'AuthList  '
+     A                                      COLOR(WHT)
+     A                                      DSPATR(UL)
+     A                                  4 47'Public Authority/Src '
+     A                                      DSPATR(UL)
+     A                                      COLOR(WHT)
+     A                                  4 71'Status    '
+     A                                      COLOR(WHT)
+     A                                      DSPATR(UL)
+      *----------------------------------------------------------------
+     A          R KEY1
+     A                                      OVERLAY
+     A                                 23  2'F3=Exit'
+     A                                      COLOR(BLU)
+     A                                 23 12'F5=Refresh'
+     A                                      COLOR(BLU)
+     A                                 23 25'F6=Add'
+     A                                      COLOR(BLU)
+     A                                 23 34'F11=More/Less'
+     A                                      COLOR(BLU)
+      *===============================================================
+      * DETAIL SCREEN (WINDOW)
+      *===============================================================
+     A          R WDW2
+     A                                      WINDOW(8 8 10 40 *RSTCSR)
+     A                                      OVERLAY
+     A                                      CA12
+     A                                  2  3'Library:'
+     A            TABLIB        10A  B  2 12
+     A  21                                  DSPATR(PC RI)
+     A  20                                  DSPATR(PR)
+     A                                  3  5'Table:'
+     A            TABNAM        10A  B  3 12
+     A  22                                  DSPATR(PC RI)
+     A  20                                  DSPATR(PR)
+     A  20                              4  2'AuthList:'
+     A            TABAUTL       10A  B  4 12
+     A  23                                  DSPATR(PC RI)
+     A N20                                  DSPATR(PR ND)
+     A  20                              5  3'*Public:'
+     A            PUBAUT        10A  B  5 12
+     A  24                                  DSPATR(PC RI)
+     A N20                                  DSPATR(PR ND)
+     A            PUBSRC        10A  B  5 23
+     A  25                                  DSPATR(PC RI)
+     A N20                                  DSPATR(PR ND)
+     A            W2_MSG        38A  O  9  2COLOR(WHT)
+     A                                  8  2'F12=Cancel'
+     A                                      COLOR(BLU)
+      *===============================================================
+      * MESSAGE SUBFILE
+      *===============================================================
+     A          R MSGSFL                    SFL
+     A                                      SFLMSGRCD(24)
+     A            MSGKEY                    SFLMSGKEY
+     A            PS_PGMNAM                 SFLPGMQ
+      *----------------------------------------------------------------
+     A          R MSGSFLC                   SFLCTL(MSGSFL)
+     A                                      SFLSIZ(0002)
+     A                                      SFLPAG(0001)
+     A                                      OVERLAY
+     A                                      SFLDSP
+     A                                      SFLDSPCTL
+     A                                      SFLINZ
+     A N98                                  SFLEND
+     A            PS_PGMNAM                 SFLPGMQ
