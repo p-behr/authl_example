@@ -7,7 +7,7 @@
  /ENDIF
  ctl-opt  bnddir('QC2LE');
 
- /copy SRVAUTL_H
+ /copy *LIBL/AUTHLIST,AUTLSRVH
 
  dcl-pr RunCmd  int(10)  extproc('system');
      *n    pointer   value options(*string);
@@ -78,7 +78,7 @@
      endif;
 
 
-     // First we want to add the authorization list to the file
+     // Add the authorization list to the file
      cmd = 'GRTOBJAUT OBJ(' + qualFile + ') +
                       OBJTYPE(*FILE) +
                       AUTL(' + %trim(in_authl) + ')';
@@ -88,71 +88,174 @@
          return SRVAUTL_ERROR;
      endif;
 
-     // Then we want *PUBLIC authority to come from *AUTL
-     cmd = 'GRTOBJAUT OBJ(' + qualFile + ') +
-                      OBJTYPE(*FILE) +
-                      USER(*PUBLIC) +
-                      AUT(*AUTL)';
-
-     if RunCmd(cmd) <> SRVAUTL_CMD_SUCCESS;
-         LogMessage('ERROR: *PUBLIC authority for ' + qualFile + ' not set');
-         return SRVAUTL_ERROR;
-     endif;
-
      return SRVAUTL_SUCCESS;
  end-proc  AddAuthListToFile;
 
 
- // -------------------------------------------------------
- // RemoveAuthListFromFile
- // -------------------------------------------------------
- dcl-proc  RemoveAuthListFromFile  export;
-     dcl-pi *n  ind;
-         in_lib     char(10) const;
-         in_file    char(10) const;
-         in_public  char(10) const;
-     end-pi;
+// -------------------------------------------------------
+// SetFilePublicAuth
+// Sets the *PUBLIC authority for a file
+// -------------------------------------------------------
+dcl-proc  SetFilePublicAuth  export;
+    dcl-pi *n  ind;
+        in_lib           char(10) const;
+        in_file          char(10) const;
+        in_authSource    char(10) const;
+        in_publicAuth    char(10) const;
+    end-pi;
 
-     dcl-s  cmd   varchar(128);
-     dcl-s  qualFile varchar(21);
+    dcl-s  cmd   varchar(128);
+    dcl-s  qualFile varchar(21);
+    dcl-s  authList char(10);
 
-     qualFile = %trim(in_lib) + '/' + %trim(in_file);
+    qualFile = %trim(in_lib) + '/' + %trim(in_file);
 
-
-     // Check that we have a valid *PUBLIC authority
-     if in_public <> '*CHANGE'
-     and in_public <> '*ALL'
-     and in_public <> '*USE'
-     and in_public <> '*EXCLUDE';
-         LogMessage('ERROR: "' + %trim(in_public) + '" is not valid authority');
-         return SRVAUTL_ERROR;
-     endif;
-
-
-     // Remove the authorization list
-     cmd = 'GRTOBJAUT OBJ(' + qualFile + ') +
-                      OBJTYPE(*FILE) +
-                      AUTL(*NONE)';
-
-     if RunCmd(cmd) <> SRVAUTL_CMD_SUCCESS;
-         LogMessage('ERROR: *AUTL not removed from ' + qualFile);
-         return SRVAUTL_ERROR;
-     endif;
+    // Make sure the file exists
+    if TableExists(in_lib : in_file) = SRVAUTL_ERROR;
+        LogMessage(
+            'ERROR: File ' + %trim(qualFile) + ' not valid'
+        );
+        return SRVAUTL_ERROR;
+    endif;
 
 
-     // Set the *PUBLIC authority
-     cmd = 'GRTOBJAUT OBJ(' + qualFile + ') +
-                      OBJTYPE(*FILE) +
-                      USER(*PUBLIC) +
-                      AUT(' + %trim(in_public) + ')';
+    // Make sure the authority source is valid
+    if in_authSource <> '*FILE'
+    and in_authSource <> '*AUTL';
+        LogMessage(
+            'ERROR: Authority Source "' + %trim(in_authSource) + '" not valid'
+        );
+        return SRVAUTL_ERROR;
+    endif;
 
-     if RunCmd(cmd) <> SRVAUTL_CMD_SUCCESS;
-         LogMessage('ERROR: *PUBLIC authority for ' + qualFile + ' not set');
-         return SRVAUTL_ERROR;
-     endif;
 
-     return SRVAUTL_SUCCESS;
- end-proc  RemoveAuthListFromFile;
+    // *FILE source
+    if in_authSource = '*FILE';
+
+        // *PUBLIC authority is required
+        if in_publicAuth = *blanks;
+            LogMessage(
+                'ERROR: *Public Authority is required for *FILE source'
+            );
+            return SRVAUTL_ERROR;
+
+        // *PUBLIC authority must be valid
+        elseif in_publicAuth <> '*EXCLUDE'
+           and in_publicAuth <> '*USE'
+           and in_publicAuth <> '*CHANGE'
+           and in_publicAuth <> '*ALL';
+            LogMessage(
+                'ERROR: *Public Authority "' + %trim(in_publicAuth) + '" not valid'
+            );
+            return SRVAUTL_ERROR;
+
+        // Set *PUBLIC authority command
+        else;
+
+            // First, revoke existing authority
+            cmd = 'RVKOBJAUT  OBJ(' + qualFile + ') OBJTYPE(*FILE) +
+                            USER(*PUBLIC) AUT(*ALL)';
+            if RunCmd(cmd) <> SRVAUTL_CMD_SUCCESS;
+                LogMessage(
+                    'ERROR: *PUBLIC authority not changed for ' + qualFile
+                );
+                return SRVAUTL_ERROR;
+            endif;
+
+            // Then grant the requested authority
+            cmd = 'GRTOBJAUT OBJ(' + qualFile + ') OBJTYPE(*FILE) +
+                            USER(*PUBLIC) AUT(' + %trim(in_publicAuth) + ')';
+            if RunCmd(cmd) <> SRVAUTL_CMD_SUCCESS;
+                LogMessage(
+                    'ERROR: *PUBLIC authority not changed for ' + qualFile
+                );
+                return SRVAUTL_ERROR;
+            endif;
+
+        endif;
+
+    // *AUTL source
+    elseif in_authSource = '*AUTL';
+
+        // The file must have an authorization list
+        if GetFileAuthList(in_lib : in_file) = *blanks;
+            LogMessage(
+                'ERROR: File must have an authorization list for *AUTL source'
+            );
+            return SRVAUTL_ERROR;
+
+        // Set *PUBLIC authority command
+        else;
+            cmd = 'GRTOBJAUT OBJ(' + qualFile + ') OBJTYPE(*FILE) +
+                            USER(*PUBLIC) AUT(*AUTL)';
+            if RunCmd(cmd) <> SRVAUTL_CMD_SUCCESS;
+                LogMessage(
+                    'ERROR: *PUBLIC authority not changed for ' + qualFile
+                );
+                return SRVAUTL_ERROR;
+            endif;
+
+        endif;
+
+    endif;
+
+
+    return SRVAUTL_SUCCESS;
+end-proc  SetFilePublicAuth;
+
+
+// -------------------------------------------------------
+// RemoveAuthListFromFile
+// -------------------------------------------------------
+dcl-proc  RemoveAuthListFromFile  export;
+    dcl-pi *n  ind;
+        in_lib     char(10) const;
+        in_file    char(10) const;
+        in_public  char(10) const  options(*nopass : *omit);
+    end-pi;
+
+    dcl-s  cmd   varchar(128);
+    dcl-s  qualFile varchar(21);
+    dcl-s  newAuth  char(10);
+    dcl-ds currentAuth qualified;
+        authority char(10);
+        source    char(10);
+    end-ds;
+
+    // Make sure the file exists
+    if TableExists(in_lib : in_file) = SRVAUTL_ERROR;
+        LogMessage(
+            'ERROR: File ' + %trim(qualFile) + ' not valid'
+        );
+        return SRVAUTL_ERROR;
+    endif;
+
+    qualFile = %trim(in_lib) + '/' + %trim(in_file);
+    currentAuth = GetFilePublicAuth(in_lib : in_file);
+    if %parms >= %parmnum(in_public)
+    and %addr(in_public) <> *null;
+        newAuth = in_public;
+    endif;
+
+    // If the file is currently getting *PUBLIC authority from the *AUTL
+    // we need to set a new *PUBLIC authority for the *FILE.
+    if currentAuth.source = '*AUTL'
+    or (newAuth <> *blanks and currentAuth.authority <> newAuth);
+        if SetFilePublicAuth(in_lib : in_file : '*FILE' : newAuth) = SRVAUTL_ERROR;
+            LogMessage('ERROR: *AUTL not removed from ' + qualFile);
+            return SRVAUTL_ERROR;
+        endif;
+    endif;
+
+    // Remove the authorization list
+    cmd = 'GRTOBJAUT OBJ(' + qualFile + ') OBJTYPE(*FILE) AUTL(*NONE)';
+    if RunCmd(cmd) <> SRVAUTL_CMD_SUCCESS;
+        LogMessage('ERROR: *AUTL not removed from ' + qualFile);
+        return SRVAUTL_ERROR;
+    endif;
+
+    return SRVAUTL_SUCCESS;
+end-proc  RemoveAuthListFromFile;
 
 
  // -------------------------------------------------------

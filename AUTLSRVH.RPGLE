@@ -35,10 +35,18 @@
  end-pr;
 
  // -------------------------------------------------------
+ dcl-pr  SetFilePublicAuth  ind  extproc(*dclcase);
+    in_lib           char(10) const;
+    in_file          char(10) const;
+    in_authSource    char(10) const;
+    in_publicAuth    char(10) const;
+ end-pr;
+
+ // -------------------------------------------------------
  dcl-pr  RemoveAuthListFromFile  ind  extproc(*dclcase);
      in_lib    char(10) const;
      in_file   char(10) const;
-     in_public char(10) const;
+     in_public char(10) const  options(*nopass : *omit);
  end-pr;
 
  // -------------------------------------------------------

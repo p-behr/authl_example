@@ -3,6 +3,7 @@ STRPGMEXP  PGMLVL(*CURRENT) SIGNATURE('AUTLSRV V1.0')
    EXPORT     SYMBOL("LibraryExists")
    EXPORT     SYMBOL("TableExists")
    EXPORT     SYMBOL("AddAuthListToFile")
+   EXPORT     SYMBOL("SetFilePublicAuth")
    EXPORT     SYMBOL("RemoveAuthListFromFile")
    EXPORT     SYMBOL("GetFileAuthList")
    EXPORT     SYMBOL("GetFilePublicAuth")
@@ -10,5 +11,3 @@ STRPGMEXP  PGMLVL(*CURRENT) SIGNATURE('AUTLSRV V1.0')
    EXPORT     SYMBOL("CheckObject")
    EXPORT     SYMBOL("LogMessage")
 ENDPGMEXP
-
-
